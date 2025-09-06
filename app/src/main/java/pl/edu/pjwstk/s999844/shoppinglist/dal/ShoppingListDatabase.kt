@@ -30,15 +30,23 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import pl.edu.pjwstk.s999844.shoppinglist.models.RequiredItem
 
-@Database(entities = [RequiredItem::class], version = 1, exportSchema = false)
+@Database(entities = [RequiredItem::class], version = 2, exportSchema = false)
 abstract class ShoppingListDatabase : RoomDatabase() {
 	abstract fun getShoppingListDao(): ShoppingListDao
 
 	@Suppress("SyntheticAccessor")
 	companion object {
 		private var INSTANCE: ShoppingListDatabase? = null
+		
+		private val MIGRATION_1_2 = object : Migration(1, 2) {
+			override fun migrate(database: SupportSQLiteDatabase) {
+				database.execSQL("ALTER TABLE RequiredItem ADD COLUMN originalAmount INTEGER NOT NULL DEFAULT 0")
+			}
+		}
 
 		fun getInstance(context: Context): ShoppingListDatabase {
 			var instance = INSTANCE
@@ -48,6 +56,7 @@ abstract class ShoppingListDatabase : RoomDatabase() {
 
 			instance = Room.databaseBuilder(context.applicationContext, ShoppingListDatabase::class.java, ShoppingListDatabase::class.java.name)
 				.allowMainThreadQueries()
+				.addMigrations(MIGRATION_1_2)
 				.build()
 			INSTANCE = instance
 			return instance

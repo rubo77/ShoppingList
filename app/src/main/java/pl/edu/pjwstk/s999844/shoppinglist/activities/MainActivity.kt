@@ -99,7 +99,19 @@ class MainActivity : AbstractShoppingActivity() {
 		if (change == null) {
 			shoppingListDao.delete(dbItem)
 		} else {
-			dbItem.amount = change.plus(dbItem.amount).coerceAtLeast(0)
+			val oldAmount = dbItem.amount
+			val newAmount = change.plus(dbItem.amount).coerceAtLeast(0)
+			
+			// If marking as done (amount going to 0), store original amount
+			if (oldAmount > 0 && newAmount == 0) {
+				dbItem.originalAmount = oldAmount
+			}
+			// If restoring from done (amount going from 0 to positive), clear original amount
+			else if (oldAmount == 0 && newAmount > 0) {
+				dbItem.originalAmount = 0
+			}
+			
+			dbItem.amount = newAmount
 			shoppingListDao.update(dbItem)
 		}
 	}

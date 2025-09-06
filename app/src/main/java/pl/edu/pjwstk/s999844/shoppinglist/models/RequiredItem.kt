@@ -33,6 +33,8 @@ import androidx.room.PrimaryKey
 class RequiredItem(var name: String, var amount: Int) {
 	@PrimaryKey(autoGenerate = true)
 	var id: Long = 0
+	
+	var originalAmount: Int = 0
 
 	override fun equals(other: Any?): Boolean {
 		if (this === other) return true

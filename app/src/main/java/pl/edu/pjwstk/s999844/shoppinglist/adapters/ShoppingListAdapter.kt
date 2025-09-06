@@ -57,6 +57,18 @@ class ShoppingListAdapter(private val changeAmountCallback: BiConsumer<RequiredI
 
 		binding.nameTextView.text = item.name
 		binding.nameTextView.alpha = if (item.amount > 0) 1f else ZERO_ITEMS_OPACITY
+		
+		// Add click listener to name text view for marking items as done/undone
+		binding.nameTextView.setOnClickListener {
+			if (item.amount > 0) {
+				// Mark as done: store current amount and set to 0
+				changeAmountCallback.accept(item, -item.amount)
+			} else {
+				// Restore from done: restore original amount
+				val restoreAmount = if (item.originalAmount > 0) item.originalAmount else 1
+				changeAmountCallback.accept(item, restoreAmount)
+			}
+		}
 
 		binding.addButton.setOnClickListener {
 			changeAmountCallback.accept(item, 1)
