@@ -35,7 +35,10 @@ import pl.edu.pjwstk.s999844.shoppinglist.databinding.ShoppingListItemBinding
 import pl.edu.pjwstk.s999844.shoppinglist.models.RequiredItem
 import java.util.function.BiConsumer
 
-class ShoppingListAdapter(private val changeAmountCallback: BiConsumer<RequiredItem, Int?>) : RecyclerView.Adapter<ShoppingListAdapter.ViewHolder>() {
+class ShoppingListAdapter(
+	private val changeAmountCallback: BiConsumer<RequiredItem, Int?>,
+	private val toggleDoneCallback: (RequiredItem) -> Unit
+) : RecyclerView.Adapter<ShoppingListAdapter.ViewHolder>() {
 	companion object {
 		private const val ZERO_ITEMS_OPACITY = 0.3f
 	}
@@ -56,12 +59,18 @@ class ShoppingListAdapter(private val changeAmountCallback: BiConsumer<RequiredI
 		binding.amountTextView.isVisible = item.amount > 1
 
 		binding.nameTextView.text = item.name
-		binding.nameTextView.alpha = if (item.amount > 0) 1f else ZERO_ITEMS_OPACITY
+		// Grey out done items or items with amount 0 (for backward compatibility)
+		binding.nameTextView.alpha = if (item.done || item.amount == 0) ZERO_ITEMS_OPACITY else 1f
+		
+		// Add click listener to toggle done status when tapping the name
+		binding.nameTextView.setOnClickListener {
+			toggleDoneCallback(item)
+		}
 
 		binding.addButton.setOnClickListener {
 			changeAmountCallback.accept(item, 1)
 		}
-		binding.subtractButton.alpha = if (item.amount > 0) 1f else ZERO_ITEMS_OPACITY
+		binding.subtractButton.alpha = if (item.done || item.amount == 0) ZERO_ITEMS_OPACITY else 1f
 		binding.subtractButton.setOnClickListener {
 			changeAmountCallback.accept(item, -1)
 		}
