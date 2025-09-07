@@ -30,7 +30,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity
-class RequiredItem(var name: String, var amount: Int) {
+class RequiredItem(var name: String, var amount: Int, var done: Boolean = false) {
 	@PrimaryKey(autoGenerate = true)
 	var id: Long = 0
 

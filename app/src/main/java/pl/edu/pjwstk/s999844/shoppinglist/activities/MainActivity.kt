@@ -56,7 +56,7 @@ class MainActivity : AbstractShoppingActivity() {
 		binding.mainListRecyclerView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
 
 		shoppingListDao.findAllItems().observe(this, this::observeDatabaseChange)
-		binding.mainListRecyclerView.adapter = ShoppingListAdapter(this::changeItemCallback)
+		binding.mainListRecyclerView.adapter = ShoppingListAdapter(this::changeItemCallback, this::toggleDoneCallback)
 	}
 
 	override fun onStart() {
@@ -99,9 +99,23 @@ class MainActivity : AbstractShoppingActivity() {
 		if (change == null) {
 			shoppingListDao.delete(dbItem)
 		} else {
-			dbItem.amount = change.plus(dbItem.amount).coerceAtLeast(0)
+			// Remove the constraint that prevents negative amounts
+			dbItem.amount = change.plus(dbItem.amount)
 			shoppingListDao.update(dbItem)
 		}
+	}
+
+	/**
+	 * Toggle the done status of an item.
+	 *
+	 * @param[item] the item to toggle done status for
+	 */
+	private fun toggleDoneCallback(item: RequiredItem) {
+		val dbItem: RequiredItem = shoppingListDao.findById(item.id)
+			?: return
+
+		dbItem.done = !dbItem.done
+		shoppingListDao.update(dbItem)
 	}
 
 	private fun observeDatabaseChange(items: List<RequiredItem>) {
@@ -111,13 +125,15 @@ class MainActivity : AbstractShoppingActivity() {
 			Order.AmountAscending -> compareBy { it.amount }
 			Order.AmountDescending -> compareByDescending { it.amount }
 		}
-		if (settings.orderZeroItemsLast) {
-			comparator = Comparator<RequiredItem> { a, b ->
-				if (a.amount > 0 && b.amount == 0) -1
-				else if (a.amount == 0 && b.amount > 0) 1
-				else 0
-			}.then(comparator)
-		}
+		
+		// Always sort done items to the bottom regardless of other sorting
+		comparator = Comparator<RequiredItem> { a, b ->
+			when {
+				a.done && !b.done -> 1  // a is done, b is not -> a goes after b
+				!a.done && b.done -> -1 // a is not done, b is done -> a goes before b
+				else -> 0 // both have same done status, use original comparator
+			}
+		}.then(comparator)
 
 		val sorted = items.sortedWith(comparator)
 		(binding.mainListRecyclerView.adapter as ShoppingListAdapter).setItems(sorted)
